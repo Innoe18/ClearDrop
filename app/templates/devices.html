@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% block content %}
+<h1 class="h4 mb-3">Devices</h1>
+
+<div class="card shadow-sm mb-3">
+  <div class="card-body">
+    <h2 class="h6">Add a device</h2>
+    <form method="post" class="row g-2">
+      <div class="col-md-4">
+        <input class="form-control" name="device_id" placeholder="Device ID (e.g., dev123)" required>
+      </div>
+      <div class="col-md-4">
+        <input class="form-control" name="nickname" placeholder="Nickname (optional)">
+      </div>
+      <div class="col-md-4">
+        <button class="btn btn-dark w-100" type="submit">Add device</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div class="card shadow-sm">
+  <div class="card-body">
+    <h2 class="h6">Your devices</h2>
+    {% if devices|length == 0 %}
+      <div class="text-muted">No devices added yet.</div>
+    {% else %}
+      <ul class="list-group">
+        {% for d in devices %}
+          <li class="list-group-item d-flex justify-content-between align-items-center">
+            <div>
+              <div class="fw-semibold">{{ d.nickname }}</div>
+              <div class="small text-muted">{{ d.device_id }}</div>
+            </div>
+            <span class="badge bg-light text-dark">Profile: {{ d.profile }}</span>
+          </li>
+        {% endfor %}
+      </ul>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}
