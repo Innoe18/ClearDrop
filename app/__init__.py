@@ -9,6 +9,7 @@ migrate = Migrate()
 login_manager = LoginManager()
 login_manager.login_view = "auth.login"
 
+
 def create_app():
     load_dotenv()
 
@@ -16,6 +17,11 @@ def create_app():
     app.config.from_object("app.config.Config")
 
     db.init_app(app)
+
+    # Start PubNub subscriber AFTER app/db are initialized
+    from app.iot_worker import start_iot_worker
+    start_iot_worker(app)
+
     migrate.init_app(app, db)
     login_manager.init_app(app)
 
