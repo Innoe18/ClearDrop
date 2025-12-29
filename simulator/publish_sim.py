@@ -3,9 +3,10 @@ from datetime import datetime, timezone
 from pubnub.pnconfiguration import PNConfiguration
 from pubnub.pubnub import PubNub
 
-PUB_KEY = os.getenv("PUBNUB_PUBLISH_KEY")
-SUB_KEY = os.getenv("PUBNUB_SUBSCRIBE_KEY")
-CHANNEL = os.getenv("PUBNUB_TELEMETRY_CHANNEL", "cleardrop.telemetry.CD-001")
+PUB_KEY = "PASTE_PUBLISH_KEY"
+SUB_KEY = "PASTE_SUBSCRIBE_KEY"
+CHANNEL = "cleardrop.telemetry.CD-001"
+
 
 pnconfig = PNConfiguration()
 pnconfig.publish_key = PUB_KEY
