@@ -1,35 +1,191 @@
-{% extends "base.html" %}
-{% block content %}
-<div class="d-flex justify-content-between align-items-center mb-3">
-  <h1 class="h4 mb-0">Dashboard</h1>
-  <a class="btn btn-dark btn-sm" href="{{ url_for('dash.devices') }}">Add / Manage Devices</a>
-</div>
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>ClearDrop Dashboard</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    body { font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial; margin: 20px; }
+    .row { display: grid; grid-template-columns: repeat(12, 1fr); gap: 12px; }
+    .card { border: 1px solid #e5e7eb; border-radius: 14px; padding: 14px; background: #fff; }
+    .span-4 { grid-column: span 4; }
+    .span-8 { grid-column: span 8; }
+    .span-12 { grid-column: span 12; }
+    .muted { color: #6b7280; font-size: 0.9rem; }
+    .big { font-size: 1.6rem; font-weight: 700; }
+    .badge { display: inline-block; padding: 4px 10px; border-radius: 999px; font-size: 0.85rem; }
+    .safe { background: #ecfdf5; color: #065f46; }
+    .warn { background: #fffbeb; color: #92400e; }
+    .danger { background: #fef2f2; color: #991b1b; }
+    select { padding: 8px; border-radius: 10px; border: 1px solid #e5e7eb; }
+  </style>
+</head>
+<body>
+  <div class="row">
+    <div class="card span-12">
+      <div style="display:flex; justify-content:space-between; align-items:center; gap:12px;">
+        <div>
+          <div class="big">ClearDrop Live Dashboard</div>
+          <div class="muted">Real-time water readings (via PubNub → EC2 → RDS)</div>
+        </div>
+        <div>
+          <label class="muted">Device</label><br />
+          <select id="deviceSelect">
+            {% for d in devices %}
+  <option value="{{ d.device_id }}" {% if d.device_id == device_id %}selected{% endif %}>
+    {{ d.nickname or d.device_id }}
+  </option>
+{% endfor %}
 
-{% if devices|length == 0 %}
-  <div class="alert alert-info">
-    No devices yet. Add your first ClearDrop device to start receiving telemetry.
-  </div>
-{% else %}
-  <div class="row g-3">
-    {% for d in devices %}
-      <div class="col-md-6">
-        <div class="card shadow-sm">
-          <div class="card-body">
-            <div class="d-flex justify-content-between">
-              <div>
-                <h2 class="h5 mb-1">{{ d.nickname }}</h2>
-                <div class="text-muted small">Device ID: {{ d.device_id }}</div>
-              </div>
-              <span class="badge bg-secondary align-self-start">No live data yet</span>
-            </div>
-            <hr>
-            <div class="small text-muted">
-              Next step: PubNub ingest + show latest temperature/TDS + alerts.
-            </div>
-          </div>
+          </select>
         </div>
       </div>
-    {% endfor %}
+    </div>
+
+    <div class="card span-4">
+      <div class="muted">Status</div>
+      <div id="statusBadge" class="badge safe">Safe</div>
+      <div class="muted" style="margin-top:10px;">Last update</div>
+      <div id="lastUpdate" class="big">—</div>
+    </div>
+
+    <div class="card span-4">
+      <div class="muted">Temperature (°C)</div>
+      <div id="tempVal" class="big">—</div>
+      <div id="tempHint" class="muted">—</div>
+    </div>
+
+    <div class="card span-4">
+      <div class="muted">TDS (ppm)</div>
+      <div id="tdsVal" class="big">—</div>
+      <div id="tdsHint" class="muted">—</div>
+    </div>
+
+    <div class="card span-12">
+      <div style="display:flex; justify-content:space-between; align-items:center;">
+        <div>
+          <div class="big" style="font-size:1.2rem;">Last 200 readings</div>
+          <div class="muted">Auto-refreshes every 5 seconds</div>
+        </div>
+        <button id="refreshBtn" style="padding:8px 12px; border-radius:10px; border:1px solid #e5e7eb; background:#fff; cursor:pointer;">
+          Refresh
+        </button>
+      </div>
+      <div style="margin-top:12px;">
+        <canvas id="telemetryChart" height="110"></canvas>
+      </div>
+    </div>
   </div>
-{% endif %}
-{% endblock %}
+
+<script>
+  const deviceSelect = document.getElementById("deviceSelect");
+  const refreshBtn = document.getElementById("refreshBtn");
+
+  const statusBadge = document.getElementById("statusBadge");
+  const lastUpdate = document.getElementById("lastUpdate");
+  const tempVal = document.getElementById("tempVal");
+  const tdsVal = document.getElementById("tdsVal");
+  const tempHint = document.getElementById("tempHint");
+  const tdsHint = document.getElementById("tdsHint");
+
+  function statusFrom(tempC, tdsPpm) {
+    // You can tune these later for “eczema-safe shower”
+    // temp: warn above 40, danger above 42
+    // tds: warn above 300, danger above 450 (example)
+    let level = "safe";
+    if (tempC >= 42 || tdsPpm >= 450) level = "danger";
+    else if (tempC >= 40 || tdsPpm >= 300) level = "warn";
+    return level;
+  }
+
+  function setBadge(level) {
+    statusBadge.classList.remove("safe", "warn", "danger");
+    if (level === "danger") { statusBadge.classList.add("danger"); statusBadge.textContent = "Danger"; }
+    else if (level === "warn") { statusBadge.classList.add("warn"); statusBadge.textContent = "Warning"; }
+    else { statusBadge.classList.add("safe"); statusBadge.textContent = "Safe"; }
+  }
+
+  const ctx = document.getElementById("telemetryChart").getContext("2d");
+  const chart = new Chart(ctx, {
+    type: "line",
+    data: {
+      labels: [],
+      datasets: [
+        { label: "Temp (°C)", data: [], yAxisID: "yTemp", tension: 0.25 },
+        { label: "TDS (ppm)", data: [], yAxisID: "yTds", tension: 0.25 }
+      ]
+    },
+    options: {
+      responsive: true,
+      interaction: { mode: "index", intersect: false },
+      scales: {
+        yTemp: { type: "linear", position: "left", title: { display: true, text: "°C" } },
+        yTds: { type: "linear", position: "right", title: { display: true, text: "ppm" }, grid: { drawOnChartArea: false } }
+      }
+    }
+  });
+
+  async function fetchLatest(deviceId) {
+    const res = await fetch(`/api/telemetry/latest?device_id=${encodeURIComponent(deviceId)}`);
+    const json = await res.json();
+    return json.data;
+  }
+
+  async function fetchHistory(deviceId, limit=200) {
+    const res = await fetch(`/api/telemetry/history?device_id=${encodeURIComponent(deviceId)}&limit=${limit}`);
+    const json = await res.json();
+    return json.data || [];
+  }
+
+  function formatTs(ts) {
+    try { return new Date(ts).toLocaleString(); } catch { return ts; }
+  }
+
+  async function refreshAll() {
+    const deviceId = deviceSelect.value;
+
+    const latest = await fetchLatest(deviceId);
+    if (latest) {
+      tempVal.textContent = latest.temp_c.toFixed(1);
+      tdsVal.textContent = latest.tds_ppm;
+
+      lastUpdate.textContent = formatTs(latest.ts);
+
+      const lvl = statusFrom(latest.temp_c, latest.tds_ppm);
+      setBadge(lvl);
+
+      tempHint.textContent = (latest.temp_c >= 40) ? "High temperature — consider lowering" : "Temperature normal";
+      tdsHint.textContent = (latest.tds_ppm >= 300) ? "Higher mineral content detected" : "TDS normal";
+    } else {
+      tempVal.textContent = "—";
+      tdsVal.textContent = "—";
+      lastUpdate.textContent = "No data yet";
+      setBadge("warn");
+      tempHint.textContent = "Publish telemetry to see data";
+      tdsHint.textContent = "Publish telemetry to see data";
+    }
+
+    const history = await fetchHistory(deviceId, 200);
+    chart.data.labels = history.map(p => new Date(p.ts).toLocaleTimeString());
+    chart.data.datasets[0].data = history.map(p => p.temp_c);
+    chart.data.datasets[1].data = history.map(p => p.tds_ppm);
+    chart.update();
+  }
+
+  deviceSelect.addEventListener("change", () => {
+    // keep URL in sync
+    const url = new URL(window.location.href);
+    url.searchParams.set("device_id", deviceSelect.value);
+    window.history.replaceState({}, "", url.toString());
+    refreshAll();
+  });
+
+  refreshBtn.addEventListener("click", refreshAll);
+
+  // initial + polling
+  refreshAll();
+  setInterval(refreshAll, 5000);
+</script>
+</body>
+</html>
