@@ -13,7 +13,19 @@ def home():
 @login_required
 def dashboard():
     devices = Device.query.filter_by(owner_id=current_user.id).all()
-    return render_template("dashboard.html", devices=devices)
+
+    # device_id can come from URL: /dashboard?device_id=CD-001
+    selected_device_id = request.args.get("device_id")
+
+    # If no device_id provided, default to user's first device (if any)
+    if not selected_device_id and devices:
+        selected_device_id = devices[0].device_id
+
+    return render_template(
+        "dashboard.html",
+        devices=devices,
+        device_id=selected_device_id
+    )
 
 @dash_bp.route("/devices", methods=["GET", "POST"])
 @login_required

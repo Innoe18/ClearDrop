@@ -17,17 +17,16 @@ def create_app():
     app.config.from_object("app.config.Config")
 
     db.init_app(app)
-
-    # Start PubNub subscriber AFTER app/db are initialized
-    from app.iot_worker import start_iot_worker
-    start_iot_worker(app)
-
     migrate.init_app(app, db)
     login_manager.init_app(app)
 
+    # Blueprints
     from app.routes.auth import auth_bp
     from app.routes.dashboard import dash_bp
+    from app.routes.api import api_bp
+
     app.register_blueprint(auth_bp)
     app.register_blueprint(dash_bp)
+    app.register_blueprint(api_bp)
 
     return app
