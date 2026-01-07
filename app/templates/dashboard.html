@@ -19,6 +19,15 @@
     .warn { background: #fffbeb; color: #92400e; }
     .danger { background: #fef2f2; color: #991b1b; }
     select { padding: 8px; border-radius: 10px; border: 1px solid #e5e7eb; }
+
+    /* buttons */
+    .btn {
+      padding: 8px 12px;
+      border-radius: 10px;
+      border: 1px solid #e5e7eb;
+      background: #fff;
+      cursor: pointer;
+    }
   </style>
 </head>
 <body>
@@ -33,11 +42,10 @@
           <label class="muted">Device</label><br />
           <select id="deviceSelect">
             {% for d in devices %}
-  <option value="{{ d.device_id }}" {% if d.device_id == device_id %}selected{% endif %}>
-    {{ d.nickname or d.device_id }}
-  </option>
-{% endfor %}
-
+              <option value="{{ d.device_id }}" {% if d.device_id == device_id %}selected{% endif %}>
+                {{ d.nickname or d.device_id }}
+              </option>
+            {% endfor %}
           </select>
         </div>
       </div>
@@ -68,14 +76,25 @@
           <div class="big" style="font-size:1.2rem;">Last 200 readings</div>
           <div class="muted">Auto-refreshes every 5 seconds</div>
         </div>
-        <button id="refreshBtn" style="padding:8px 12px; border-radius:10px; border:1px solid #e5e7eb; background:#fff; cursor:pointer;">
-          Refresh
-        </button>
+        <button id="refreshBtn" class="btn">Refresh</button>
       </div>
       <div style="margin-top:12px;">
         <canvas id="telemetryChart" height="110"></canvas>
       </div>
     </div>
+
+    <!-- ✅ NEW: Actuator Controls -->
+    <div class="card span-12">
+      <div class="big" style="font-size:1.2rem;">Actuator Controls</div>
+      <div class="muted">Send commands to the device buzzer via PubNub</div>
+
+      <div style="margin-top:12px; display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
+        <button id="btnTestBuzz" class="btn">Test Buzzer</button>
+        <button id="btnStopBuzz" class="btn">Stop</button>
+        <span id="cmdStatus" class="muted"></span>
+      </div>
+    </div>
+
   </div>
 
 <script>
@@ -89,10 +108,11 @@
   const tempHint = document.getElementById("tempHint");
   const tdsHint = document.getElementById("tdsHint");
 
+  const btnTestBuzz = document.getElementById("btnTestBuzz");
+  const btnStopBuzz = document.getElementById("btnStopBuzz");
+  const cmdStatus = document.getElementById("cmdStatus");
+
   function statusFrom(tempC, tdsPpm) {
-    // You can tune these later for “eczema-safe shower”
-    // temp: warn above 40, danger above 42
-    // tds: warn above 300, danger above 450 (example)
     let level = "safe";
     if (tempC >= 42 || tdsPpm >= 450) level = "danger";
     else if (tempC >= 40 || tdsPpm >= 300) level = "warn";
@@ -173,8 +193,35 @@
     chart.update();
   }
 
+  async function sendCmd(deviceId, body) {
+    cmdStatus.textContent = "Sending...";
+    const res = await fetch(`/api/device/${encodeURIComponent(deviceId)}/command`, {
+      method: "POST",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify(body)
+    });
+
+    const json = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      cmdStatus.textContent = `Error: ${json.error || res.status}`;
+      return;
+    }
+    cmdStatus.textContent = `Sent: ${body.cmd}`;
+  }
+
+  btnTestBuzz?.addEventListener("click", () => {
+    const deviceId = deviceSelect.value;
+    if (!deviceId) return;
+    sendCmd(deviceId, { cmd: "buzz", pattern: "beep", freq_hz: 1000, duration_ms: 700 });
+  });
+
+  btnStopBuzz?.addEventListener("click", () => {
+    const deviceId = deviceSelect.value;
+    if (!deviceId) return;
+    sendCmd(deviceId, { cmd: "stop" });
+  });
+
   deviceSelect.addEventListener("change", () => {
-    // keep URL in sync
     const url = new URL(window.location.href);
     url.searchParams.set("device_id", deviceSelect.value);
     window.history.replaceState({}, "", url.toString());
