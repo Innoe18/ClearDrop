@@ -1,101 +1,111 @@
-<!doctype html>
-<html lang="en">
-<head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>ClearDrop Dashboard</title>
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <style>
-    body { font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial; margin: 20px; }
-    .row { display: grid; grid-template-columns: repeat(12, 1fr); gap: 12px; }
-    .card { border: 1px solid #e5e7eb; border-radius: 14px; padding: 14px; background: #fff; }
-    .span-4 { grid-column: span 4; }
-    .span-8 { grid-column: span 8; }
-    .span-12 { grid-column: span 12; }
-    .muted { color: #6b7280; font-size: 0.9rem; }
-    .big { font-size: 1.6rem; font-weight: 700; }
-    .badge { display: inline-block; padding: 4px 10px; border-radius: 999px; font-size: 0.85rem; }
-    .safe { background: #ecfdf5; color: #065f46; }
-    .warn { background: #fffbeb; color: #92400e; }
-    .danger { background: #fef2f2; color: #991b1b; }
-    select { padding: 8px; border-radius: 10px; border: 1px solid #e5e7eb; }
+{% extends "base.html" %}
+{% block title %}Dashboard • ClearDrop{% endblock %}
 
-    /* buttons */
-    .btn {
-      padding: 8px 12px;
-      border-radius: 10px;
-      border: 1px solid #e5e7eb;
-      background: #fff;
-      cursor: pointer;
-    }
-  </style>
-</head>
-<body>
-  <div class="row">
-    <div class="card span-12">
-      <div style="display:flex; justify-content:space-between; align-items:center; gap:12px;">
-        <div>
-          <div class="big">ClearDrop Live Dashboard</div>
-          <div class="muted">Real-time water readings (via PubNub → EC2 → RDS)</div>
-        </div>
-        <div>
-          <label class="muted">Device</label><br />
-          <select id="deviceSelect">
-            {% for d in devices %}
-              <option value="{{ d.device_id }}" {% if d.device_id == device_id %}selected{% endif %}>
-                {{ d.nickname or d.device_id }}
-              </option>
-            {% endfor %}
-          </select>
-        </div>
+{% block content %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<div class="flex flex-col gap-6">
+  <!-- Header Card -->
+  <div class="rounded-3xl bg-white/75 backdrop-blur border border-white shadow-soft p-6">
+    <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+      <div>
+        <h1 class="text-2xl md:text-3xl font-bold tracking-tight">Live Dashboard</h1>
+        <p class="text-slate-500 mt-1">Real-time water readings (PubNub → EC2 → RDS)</p>
+      </div>
+
+      <div class="flex items-center gap-3">
+        <div class="text-sm text-slate-500">Device</div>
+        <select id="deviceSelect"
+          class="px-4 py-2 rounded-2xl bg-white border border-slate-200 shadow-sm focus:outline-none focus:ring-2 focus:ring-aqua-300">
+          {% for d in devices %}
+            <option value="{{ d.device_id }}" {% if d.device_id == device_id %}selected{% endif %}>
+              {{ d.nickname or d.device_id }}
+            </option>
+          {% endfor %}
+        </select>
       </div>
     </div>
-
-    <div class="card span-4">
-      <div class="muted">Status</div>
-      <div id="statusBadge" class="badge safe">Safe</div>
-      <div class="muted" style="margin-top:10px;">Last update</div>
-      <div id="lastUpdate" class="big">—</div>
-    </div>
-
-    <div class="card span-4">
-      <div class="muted">Temperature (°C)</div>
-      <div id="tempVal" class="big">—</div>
-      <div id="tempHint" class="muted">—</div>
-    </div>
-
-    <div class="card span-4">
-      <div class="muted">TDS (ppm)</div>
-      <div id="tdsVal" class="big">—</div>
-      <div id="tdsHint" class="muted">—</div>
-    </div>
-
-    <div class="card span-12">
-      <div style="display:flex; justify-content:space-between; align-items:center;">
-        <div>
-          <div class="big" style="font-size:1.2rem;">Last 200 readings</div>
-          <div class="muted">Auto-refreshes every 5 seconds</div>
-        </div>
-        <button id="refreshBtn" class="btn">Refresh</button>
-      </div>
-      <div style="margin-top:12px;">
-        <canvas id="telemetryChart" height="110"></canvas>
-      </div>
-    </div>
-
-    <!-- ✅ NEW: Actuator Controls -->
-    <div class="card span-12">
-      <div class="big" style="font-size:1.2rem;">Actuator Controls</div>
-      <div class="muted">Send commands to the device buzzer via PubNub</div>
-
-      <div style="margin-top:12px; display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
-        <button id="btnTestBuzz" class="btn">Test Buzzer</button>
-        <button id="btnStopBuzz" class="btn">Stop</button>
-        <span id="cmdStatus" class="muted"></span>
-      </div>
-    </div>
-
   </div>
+
+  <!-- Stats Grid -->
+  <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+    <!-- Status -->
+    <div class="rounded-3xl bg-white/75 backdrop-blur border border-white shadow-soft p-6">
+      <div class="text-sm text-slate-500">Status</div>
+      <div id="statusBadge" class="mt-3 inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-sm font-semibold bg-mint-100 text-mint-700">
+        <span class="h-2.5 w-2.5 rounded-full bg-mint-500"></span>
+        Safe
+      </div>
+
+      <div class="mt-6 text-sm text-slate-500">Last update</div>
+      <div id="lastUpdate" class="text-xl font-bold mt-1">—</div>
+    </div>
+
+    <!-- Temperature -->
+    <div class="rounded-3xl bg-white/75 backdrop-blur border border-white shadow-soft p-6">
+      <div class="text-sm text-slate-500">Temperature</div>
+      <div class="mt-2 flex items-baseline gap-2">
+        <div id="tempVal" class="text-3xl font-extrabold">—</div>
+        <div class="text-slate-500">°C</div>
+      </div>
+      <div id="tempHint" class="mt-3 text-sm text-slate-500">—</div>
+    </div>
+
+    <!-- TDS -->
+    <div class="rounded-3xl bg-white/75 backdrop-blur border border-white shadow-soft p-6">
+      <div class="text-sm text-slate-500">TDS</div>
+      <div class="mt-2 flex items-baseline gap-2">
+        <div id="tdsVal" class="text-3xl font-extrabold">—</div>
+        <div class="text-slate-500">ppm</div>
+      </div>
+      <div id="tdsHint" class="mt-3 text-sm text-slate-500">—</div>
+    </div>
+  </div>
+
+  <!-- Chart -->
+  <div class="rounded-3xl bg-white/75 backdrop-blur border border-white shadow-soft p-6">
+    <div class="flex items-center justify-between gap-4 flex-wrap">
+      <div>
+        <div class="text-lg font-bold">Last 200 readings</div>
+        <div class="text-sm text-slate-500">Auto-refresh every 5 seconds</div>
+      </div>
+
+      <button id="refreshBtn"
+        class="px-4 py-2 rounded-2xl text-sm font-semibold text-white shadow-soft
+               bg-gradient-to-r from-aqua-500 to-lavender-500 hover:opacity-95 transition">
+        Refresh
+      </button>
+    </div>
+
+    <div class="mt-4 rounded-2xl bg-white p-3 border border-slate-100">
+      <canvas id="telemetryChart" height="110"></canvas>
+    </div>
+  </div>
+
+  <!-- Actuator Controls -->
+  <div class="rounded-3xl bg-white/75 backdrop-blur border border-white shadow-soft p-6">
+    <div class="flex items-center justify-between gap-4 flex-wrap">
+      <div>
+        <div class="text-lg font-bold">Actuator Controls</div>
+        <div class="text-sm text-slate-500">Send commands to your device buzzer via PubNub</div>
+      </div>
+
+      <div class="flex items-center gap-2">
+        <button id="btnTestBuzz"
+          class="px-4 py-2 rounded-2xl text-sm font-semibold bg-aqua-100 text-aqua-700 border border-aqua-200 hover:bg-aqua-200 transition">
+          Test Buzzer
+        </button>
+
+        <button id="btnStopBuzz"
+          class="px-4 py-2 rounded-2xl text-sm font-semibold bg-slate-100 text-slate-700 border border-slate-200 hover:bg-slate-200 transition">
+          Stop
+        </button>
+      </div>
+    </div>
+
+    <div id="cmdStatus" class="mt-3 text-sm text-slate-500"></div>
+  </div>
+</div>
 
 <script>
   const deviceSelect = document.getElementById("deviceSelect");
@@ -120,22 +130,29 @@
   }
 
   function setBadge(level) {
-    statusBadge.classList.remove("safe", "warn", "danger");
-    if (level === "danger") { statusBadge.classList.add("danger"); statusBadge.textContent = "Danger"; }
-    else if (level === "warn") { statusBadge.classList.add("warn"); statusBadge.textContent = "Warning"; }
-    else { statusBadge.classList.add("safe"); statusBadge.textContent = "Safe"; }
+    // reset
+    statusBadge.className = "mt-3 inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-sm font-semibold";
+    let dotClass = "h-2.5 w-2.5 rounded-full";
+
+    if (level === "danger") {
+      statusBadge.classList.add("bg-red-100","text-red-700","border","border-red-200");
+      statusBadge.innerHTML = `<span class="${dotClass} bg-red-500"></span> Danger`;
+    } else if (level === "warn") {
+      statusBadge.classList.add("bg-amber-100","text-amber-800","border","border-amber-200");
+      statusBadge.innerHTML = `<span class="${dotClass} bg-amber-500"></span> Warning`;
+    } else {
+      statusBadge.classList.add("bg-mint-100","text-mint-700","border","border-mint-200");
+      statusBadge.innerHTML = `<span class="${dotClass} bg-mint-500"></span> Safe`;
+    }
   }
 
   const ctx = document.getElementById("telemetryChart").getContext("2d");
   const chart = new Chart(ctx, {
     type: "line",
-    data: {
-      labels: [],
-      datasets: [
-        { label: "Temp (°C)", data: [], yAxisID: "yTemp", tension: 0.25 },
-        { label: "TDS (ppm)", data: [], yAxisID: "yTds", tension: 0.25 }
-      ]
-    },
+    data: { labels: [], datasets: [
+      { label: "Temp (°C)", data: [], yAxisID: "yTemp", tension: 0.25 },
+      { label: "TDS (ppm)", data: [], yAxisID: "yTds", tension: 0.25 }
+    ]},
     options: {
       responsive: true,
       interaction: { mode: "index", intersect: false },
@@ -169,7 +186,6 @@
     if (latest) {
       tempVal.textContent = latest.temp_c.toFixed(1);
       tdsVal.textContent = latest.tds_ppm;
-
       lastUpdate.textContent = formatTs(latest.ts);
 
       const lvl = statusFrom(latest.temp_c, latest.tds_ppm);
@@ -194,7 +210,7 @@
   }
 
   async function sendCmd(deviceId, body) {
-    cmdStatus.textContent = "Sending...";
+    cmdStatus.textContent = "Sending…";
     const res = await fetch(`/api/device/${encodeURIComponent(deviceId)}/command`, {
       method: "POST",
       headers: {"Content-Type": "application/json"},
@@ -212,7 +228,7 @@
   btnTestBuzz?.addEventListener("click", () => {
     const deviceId = deviceSelect.value;
     if (!deviceId) return;
-    sendCmd(deviceId, { cmd: "buzz", pattern: "beep", freq_hz: 1000, duration_ms: 700 });
+    sendCmd(deviceId, { cmd: "buzz", pattern: "beep", freq_hz: 600, duration_ms: 700 });
   });
 
   btnStopBuzz?.addEventListener("click", () => {
@@ -230,9 +246,7 @@
 
   refreshBtn.addEventListener("click", refreshAll);
 
-  // initial + polling
   refreshAll();
   setInterval(refreshAll, 5000);
 </script>
-</body>
-</html>
+{% endblock %}

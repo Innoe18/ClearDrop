@@ -1,41 +1,58 @@
 {% extends "base.html" %}
-{% block content %}
-<h1 class="h4 mb-3">Devices</h1>
+{% block title %}Devices • ClearDrop{% endblock %}
 
-<div class="card shadow-sm mb-3">
-  <div class="card-body">
-    <h2 class="h6">Add a device</h2>
-    <form method="post" class="row g-2">
-      <div class="col-md-4">
-        <input class="form-control" name="device_id" placeholder="Device ID (e.g., dev123)" required>
+{% block content %}
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+  <div class="lg:col-span-1 rounded-3xl bg-white/75 backdrop-blur border border-white shadow-soft p-6">
+    <h1 class="text-xl font-bold">Add device</h1>
+    <p class="text-sm text-slate-500 mt-1">Register a ClearDrop unit to your account.</p>
+
+    <form method="post" class="mt-4 space-y-3">
+      <div>
+        <label class="text-sm text-slate-600">Device ID</label>
+        <input name="device_id" required
+          class="mt-1 w-full px-4 py-2 rounded-2xl bg-white border border-slate-200 focus:outline-none focus:ring-2 focus:ring-aqua-300"
+          placeholder="e.g., CD-001">
       </div>
-      <div class="col-md-4">
-        <input class="form-control" name="nickname" placeholder="Nickname (optional)">
+
+      <div>
+        <label class="text-sm text-slate-600">Nickname (optional)</label>
+        <input name="nickname"
+          class="mt-1 w-full px-4 py-2 rounded-2xl bg-white border border-slate-200 focus:outline-none focus:ring-2 focus:ring-aqua-300"
+          placeholder="e.g., Bathroom Sensor">
       </div>
-      <div class="col-md-4">
-        <button class="btn btn-dark w-100" type="submit">Add device</button>
-      </div>
+
+      <button type="submit"
+        class="w-full px-4 py-2 rounded-2xl text-sm font-semibold text-white shadow-soft
+               bg-gradient-to-r from-aqua-500 to-lavender-500 hover:opacity-95 transition">
+        Add device
+      </button>
     </form>
   </div>
-</div>
 
-<div class="card shadow-sm">
-  <div class="card-body">
-    <h2 class="h6">Your devices</h2>
+  <div class="lg:col-span-2 rounded-3xl bg-white/75 backdrop-blur border border-white shadow-soft p-6">
+    <div class="flex items-center justify-between">
+      <h2 class="text-xl font-bold">Your devices</h2>
+      <span class="text-sm text-slate-500">{{ devices|length }} total</span>
+    </div>
+
     {% if devices|length == 0 %}
-      <div class="text-muted">No devices added yet.</div>
+      <div class="mt-4 text-slate-500">No devices yet. Add one on the left.</div>
     {% else %}
-      <ul class="list-group">
+      <div class="mt-4 divide-y divide-slate-100">
         {% for d in devices %}
-          <li class="list-group-item d-flex justify-content-between align-items-center">
+          <div class="py-4 flex items-center justify-between gap-4">
             <div>
-              <div class="fw-semibold">{{ d.nickname }}</div>
-              <div class="small text-muted">{{ d.device_id }}</div>
+              <div class="font-semibold">{{ d.nickname or d.device_id }}</div>
+              <div class="text-sm text-slate-500">{{ d.device_id }}</div>
             </div>
-            <span class="badge bg-light text-dark">Profile: {{ d.profile }}</span>
-          </li>
+            <a class="px-3 py-2 rounded-xl text-sm font-semibold bg-aqua-100 text-aqua-700 border border-aqua-200 hover:bg-aqua-200 transition"
+               href="{{ url_for('dash.dashboard', device_id=d.device_id) }}">
+              View dashboard
+            </a>
+          </div>
         {% endfor %}
-      </ul>
+      </div>
     {% endif %}
   </div>
 </div>

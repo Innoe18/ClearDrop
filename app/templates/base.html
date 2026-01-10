@@ -3,41 +3,117 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>ClearDrop Dashboard</title>
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-  <link href="{{ url_for('static', filename='styles.css') }}" rel="stylesheet">
+  <title>{% block title %}ClearDrop{% endblock %}</title>
+
+  <!-- Tailwind CDN (good for prototype/demo) -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- Optional: custom Tailwind theme (pastel aqua vibe) -->
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            aqua: {
+              50: "#ecfeff",
+              100: "#cffafe",
+              200: "#a5f3fc",
+              300: "#67e8f9",
+              400: "#22d3ee",
+              500: "#06b6d4",
+            },
+            mint: {
+              50: "#ecfdf5",
+              100: "#d1fae5",
+              200: "#a7f3d0",
+              300: "#6ee7b7",
+              400: "#34d399",
+              500: "#10b981",
+            },
+            lavender: {
+              50: "#f5f3ff",
+              100: "#ede9fe",
+              200: "#ddd6fe",
+              300: "#c4b5fd",
+              400: "#a78bfa",
+              500: "#8b5cf6",
+            }
+          },
+          boxShadow: {
+            soft: "0 10px 30px rgba(2,132,199,0.12)",
+          }
+        }
+      }
+    }
+  </script>
 </head>
-<body class="bg-light">
-<nav class="navbar navbar-expand-lg navbar-dark bg-dark">
-  <div class="container">
-    <a class="navbar-brand" href="{{ url_for('dash.dashboard') }}">ClearDrop</a>
-    <div class="d-flex gap-2">
-      {% if current_user.is_authenticated %}
-        <a class="btn btn-outline-light btn-sm" href="{{ url_for('dash.devices') }}">Devices</a>
-        <a class="btn btn-outline-light btn-sm" href="{{ url_for('auth.logout') }}">Logout</a>
-        <a href="{{ url_for('dash.dashboard') }}">Dashboard</a>
-<a href="{{ url_for('dash.devices') }}">Devices</a>
-<a href="{{ url_for('logs.logs') }}">Logs</a>
-<a href="{{ url_for('profile.profile') }}">Profile</a>
-<a href="{{ url_for('status.status_page') }}">Status</a>
 
-      {% else %}
-        <a class="btn btn-outline-light btn-sm" href="{{ url_for('auth.login') }}">Login</a>
-      {% endif %}
-    </div>
+<body class="min-h-screen bg-gradient-to-br from-aqua-50 via-white to-lavender-50 text-slate-800">
+  <!-- decorative blobs -->
+  <div class="pointer-events-none fixed inset-0 overflow-hidden">
+    <div class="absolute -top-24 -left-24 h-72 w-72 rounded-full bg-aqua-200/50 blur-3xl"></div>
+    <div class="absolute top-40 -right-24 h-72 w-72 rounded-full bg-lavender-200/50 blur-3xl"></div>
+    <div class="absolute bottom-0 left-1/3 h-72 w-72 rounded-full bg-mint-200/40 blur-3xl"></div>
   </div>
-</nav>
 
-<main class="container py-4">
-  {% with messages = get_flashed_messages(with_categories=true) %}
-    {% if messages %}
-      {% for category, msg in messages %}
-        <div class="alert alert-{{ category }} mb-3" role="alert">{{ msg }}</div>
-      {% endfor %}
-    {% endif %}
-  {% endwith %}
+  <header class="relative">
+    <nav class="mx-auto max-w-6xl px-4 py-4">
+      <div class="flex items-center justify-between rounded-2xl bg-white/70 backdrop-blur border border-white shadow-soft px-4 py-3">
+        <a href="{{ url_for('dash.dashboard') }}" class="flex items-center gap-3">
+          <div class="h-10 w-10 rounded-xl bg-gradient-to-br from-aqua-300 to-mint-300 shadow-soft flex items-center justify-center">
+            <span class="text-white font-bold">CD</span>
+          </div>
+          <div>
+            <div class="font-semibold leading-tight">ClearDrop</div>
+            <div class="text-xs text-slate-500 -mt-0.5">Live water telemetry + alerts</div>
+          </div>
+        </a>
 
-  {% block content %}{% endblock %}
-</main>
+        <div class="flex items-center gap-2">
+          {% if current_user.is_authenticated %}
+            <a class="px-3 py-2 rounded-xl text-sm font-medium hover:bg-aqua-50 border border-transparent hover:border-aqua-100 transition"
+               href="{{ url_for('dash.dashboard') }}">Dashboard</a>
+
+            <a class="px-3 py-2 rounded-xl text-sm font-medium hover:bg-aqua-50 border border-transparent hover:border-aqua-100 transition"
+               href="{{ url_for('dash.devices') }}">Devices</a>
+
+            <a class="px-3 py-2 rounded-xl text-sm font-medium hover:bg-aqua-50 border border-transparent hover:border-aqua-100 transition"
+               href="{{ url_for('logs.logs') }}">Logs</a>
+
+            <a class="px-3 py-2 rounded-xl text-sm font-medium hover:bg-aqua-50 border border-transparent hover:border-aqua-100 transition"
+               href="{{ url_for('profile.profile') }}">Profile</a>
+
+            <a class="px-3 py-2 rounded-xl text-sm font-medium hover:bg-aqua-50 border border-transparent hover:border-aqua-100 transition"
+               href="{{ url_for('status.status_page') }}">Status</a>
+
+            <a class="ml-1 px-4 py-2 rounded-xl text-sm font-semibold text-white
+                      bg-gradient-to-r from-aqua-500 to-lavender-500 shadow-soft hover:opacity-95 transition"
+               href="{{ url_for('auth.logout') }}">Logout</a>
+          {% else %}
+            <a class="px-4 py-2 rounded-xl text-sm font-semibold text-white
+                      bg-gradient-to-r from-aqua-500 to-lavender-500 shadow-soft hover:opacity-95 transition"
+               href="{{ url_for('auth.login') }}">Login</a>
+          {% endif %}
+        </div>
+      </div>
+    </nav>
+  </header>
+
+  <main class="relative mx-auto max-w-6xl px-4 pb-16">
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        <div class="space-y-2 mb-4">
+          {% for category, msg in messages %}
+            <div class="rounded-2xl border bg-white/80 backdrop-blur px-4 py-3 shadow-soft
+                        {% if category == 'success' %}border-mint-200{% elif category == 'danger' %}border-red-200{% elif category == 'warning' %}border-amber-200{% else %}border-slate-200{% endif %}">
+              <div class="text-sm">{{ msg }}</div>
+            </div>
+          {% endfor %}
+        </div>
+      {% endif %}
+    {% endwith %}
+
+    {% block content %}{% endblock %}
+  </main>
 </body>
 </html>
