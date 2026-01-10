@@ -9,6 +9,9 @@ def get_pubnub() -> PubNub:
     pnconfig.subscribe_key = os.getenv("PUBNUB_SUBSCRIBE_KEY")
     pnconfig.secret_key = os.getenv("PUBNUB_SECRET_KEY")
     pnconfig.user_id = os.getenv("PUBNUB_USER_ID", "cleardrop-server")
+    pnconfig.auth_key = os.getenv("PUBNUB_AUTH_KEY")
+    pnconfig.auth_key = os.getenv("PUBNUB_AUTH_KEY", "server")
+
     pnconfig.ssl = True
     return PubNub(pnconfig)
 
