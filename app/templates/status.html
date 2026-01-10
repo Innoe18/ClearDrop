@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% block content %}
+<h2>System Status</h2>
+<div id="box">Loading…</div>
+
+<script>
+async function loadStatus() {
+  const res = await fetch("/api/status");
+  const j = await res.json();
+  document.getElementById("box").innerHTML = `
+    <p><b>Server time (UTC):</b> ${j.server_time}</p>
+    <p><b>Last telemetry:</b> ${j.last_telemetry_ts || "—"}</p>
+    <p><b>Last device:</b> ${j.last_telemetry_device || "—"}</p>
+  `;
+}
+loadStatus();
+setInterval(loadStatus, 5000);
+</script>
+{% endblock %}

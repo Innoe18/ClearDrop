@@ -1,0 +1,11 @@
+{% extends "base.html" %}
+{% block content %}
+<h2>Profile</h2>
+<p><b>Email:</b> {{ user.email }}</p>
+<p><b>Member since:</b> {{ user.created_at if user.created_at else "—" }}</p>
+
+<div style="margin-top:16px;">
+  <a class="btn" href="{{ url_for('dash.devices') }}">Manage Devices</a>
+  <a class="btn" href="{{ url_for('dash.dashboard') }}">Dashboard</a>
+</div>
+{% endblock %}
