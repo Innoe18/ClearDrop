@@ -7,6 +7,8 @@ DEVICE_ID = os.getenv("DEVICE_ID", "CD-001")
 CHANNEL = f"cleardrop.telemetry.{DEVICE_ID}"
 
 pnconfig = PNConfiguration()
+pnconfig.auth_key = os.getenv("PUBNUB_AUTH_KEY", os.getenv("DEVICE_ID", "CD-001"))
+
 pnconfig.publish_key = os.getenv("PUBNUB_PUBLISH_KEY")
 pnconfig.subscribe_key = os.getenv("PUBNUB_SUBSCRIBE_KEY")
 pnconfig.user_id = f"cleardrop-sim-{DEVICE_ID}"
