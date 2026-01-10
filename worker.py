@@ -7,7 +7,7 @@ def main():
     app = create_app()
 
     # Subscribe to one channel for now (demo device)
-    channel = os.getenv("PUBNUB_TELEMETRY_CHANNEL", "cleardrop.telemetry.CD-001")
+    channel = os.getenv("PUBNUB_TELEMETRY_CHANNEL", "cleardrop.telemetry.CD-002")
     start_iot_worker(app)  # your start_iot_worker reads env channel already (or adjust if needed)
 
     # Keep process alive
