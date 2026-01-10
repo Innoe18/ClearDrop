@@ -3,23 +3,19 @@ from datetime import datetime, timezone
 from pubnub.pnconfiguration import PNConfiguration
 from pubnub.pubnub import PubNub
 
-DEVICE_ID = os.getenv("DEVICE_ID", "CD-001")
+DEVICE_ID = os.getenv("DEVICE_ID", "CD-002")
 CHANNEL = f"cleardrop.telemetry.{DEVICE_ID}"
 
 pnconfig = PNConfiguration()
-pnconfig.auth_key = os.getenv("PUBNUB_AUTH_KEY", os.getenv("DEVICE_ID", "CD-001"))
-
 pnconfig.publish_key = os.getenv("PUBNUB_PUBLISH_KEY")
 pnconfig.subscribe_key = os.getenv("PUBNUB_SUBSCRIBE_KEY")
 pnconfig.user_id = f"cleardrop-sim-{DEVICE_ID}"
+
+
+pnconfig.auth_key = os.getenv("PUBNUB_AUTH_KEY", DEVICE_ID)
+
 pnconfig.ssl = True
-
 pubnub = PubNub(pnconfig)
-
-token = os.getenv("PUBNUB_TOKEN")
-if token:
-    # most SDKs support this for PAM v3 tokens
-    pubnub.set_token(token)
 
 print(f"Publishing as {DEVICE_ID} on {CHANNEL}")
 
