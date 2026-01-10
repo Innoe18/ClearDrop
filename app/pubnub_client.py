@@ -11,3 +11,7 @@ def get_pubnub() -> PubNub:
     pnconfig.user_id = os.getenv("PUBNUB_USER_ID", "cleardrop-server")
     pnconfig.ssl = True
     return PubNub(pnconfig)
+
+
+def get_pubnub_server() -> PubNub:
+    return get_pubnub()
