@@ -24,9 +24,13 @@ def create_app():
     from app.routes.auth import auth_bp
     from app.routes.dashboard import dash_bp
     from app.routes.api import api_bp
+    from app.routes.api_commands import cmd_bp
+    from app.routes.api_pubnub import pubnub_bp
 
     app.register_blueprint(auth_bp)
     app.register_blueprint(dash_bp)
     app.register_blueprint(api_bp)
+    app.register_blueprint(cmd_bp)
+    app.register_blueprint(pubnub_bp)
 
     return app
