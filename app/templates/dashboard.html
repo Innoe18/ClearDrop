@@ -66,34 +66,94 @@
     </div>
   </div>
 
-  <!-- Chart -->
-  <div class="rounded-3xl bg-white/75 backdrop-blur border border-white shadow-soft p-6">
-    <div class="flex items-center justify-between gap-4 flex-wrap">
-      <div>
-        <div class="text-lg font-bold">Last 200 readings</div>
-        <div class="text-sm text-slate-500">Auto-refresh every 5 seconds</div>
-      </div>
-
-      <button id="refreshBtn"
-        class="px-4 py-2 rounded-2xl text-sm font-semibold text-white shadow-soft
-               bg-gradient-to-r from-aqua-500 to-lavender-500 hover:opacity-95 transition">
-        Refresh
-      </button>
+ <!-- ✅ Insights + Sparklines (replaces big chart) -->
+<div class="rounded-3xl bg-white/75 backdrop-blur border border-white shadow-soft p-6">
+  <div class="flex items-center justify-between gap-4 flex-wrap">
+    <div>
+      <div class="text-lg font-bold">Insights</div>
+      <div class="text-sm text-slate-500">Quick summary from your last readings</div>
     </div>
 
-   <div class="mt-4 grid grid-cols-1 lg:grid-cols-2 gap-4">
-  <div class="rounded-2xl bg-white p-3 border border-slate-100">
-    <div class="text-sm font-semibold text-slate-700 mb-2">Temperature (°C) — last 50</div>
-    <canvas id="tempChart" height="140"></canvas>
+    <button id="refreshBtn"
+      class="px-4 py-2 rounded-2xl text-sm font-semibold text-white shadow-soft
+             bg-gradient-to-r from-aqua-500 to-lavender-500 hover:opacity-95 transition">
+      Refresh
+    </button>
   </div>
 
-  <div class="rounded-2xl bg-white p-3 border border-slate-100">
-    <div class="text-sm font-semibold text-slate-700 mb-2">TDS (ppm) — last 50</div>
-    <canvas id="tdsChart" height="140"></canvas>
+  <!-- Score + Trend -->
+  <div class="mt-5 grid grid-cols-1 md:grid-cols-3 gap-4">
+    <div class="rounded-2xl border border-slate-100 bg-white p-4">
+      <div class="text-sm text-slate-500">Water score</div>
+      <div class="mt-2 flex items-end gap-2">
+        <div id="scoreVal" class="text-4xl font-extrabold">—</div>
+        <div class="text-slate-500 pb-1">/100</div>
+      </div>
+      <div id="scoreHint" class="mt-2 text-sm text-slate-500">—</div>
+    </div>
+
+    <div class="rounded-2xl border border-slate-100 bg-white p-4">
+      <div class="text-sm text-slate-500">Trend</div>
+      <div id="trendVal" class="mt-2 text-2xl font-bold">—</div>
+      <div id="trendHint" class="mt-2 text-sm text-slate-500">—</div>
+    </div>
+
+    <div class="rounded-2xl border border-slate-100 bg-white p-4">
+      <div class="text-sm text-slate-500">Recommendation</div>
+      <div id="recVal" class="mt-2 text-base font-semibold">—</div>
+      <div id="recHint" class="mt-1 text-sm text-slate-500">—</div>
+    </div>
+  </div>
+
+  <!-- Sparklines -->
+  <div class="mt-5 grid grid-cols-1 md:grid-cols-2 gap-4">
+    <div class="rounded-2xl border border-slate-100 bg-white p-4">
+      <div class="flex items-center justify-between">
+        <div class="text-sm font-semibold">Temperature trend</div>
+        <div id="tempAvg" class="text-sm text-slate-500">Avg: —</div>
+      </div>
+      <svg id="sparkTemp" viewBox="0 0 200 50" class="mt-3 w-full h-14">
+        <path id="sparkTempPath" d="" fill="none" stroke="currentColor" stroke-width="3"
+              class="text-aqua-500"></path>
+      </svg>
+      <div id="tempSummary" class="text-xs text-slate-500">—</div>
+    </div>
+
+    <div class="rounded-2xl border border-slate-100 bg-white p-4">
+      <div class="flex items-center justify-between">
+        <div class="text-sm font-semibold">TDS trend</div>
+        <div id="tdsAvg" class="text-sm text-slate-500">Avg: —</div>
+      </div>
+      <svg id="sparkTds" viewBox="0 0 200 50" class="mt-3 w-full h-14">
+        <path id="sparkTdsPath" d="" fill="none" stroke="currentColor" stroke-width="3"
+              class="text-lavender-500"></path>
+      </svg>
+      <div id="tdsSummary" class="text-xs text-slate-500">—</div>
+    </div>
+  </div>
+
+  <!-- Recent table -->
+  <div class="mt-5 rounded-2xl border border-slate-100 bg-white overflow-hidden">
+    <div class="px-4 py-3 border-b border-slate-100 flex items-center justify-between">
+      <div class="text-sm font-semibold">Recent readings</div>
+      <div class="text-xs text-slate-500">Newest first</div>
+    </div>
+    <div class="overflow-x-auto">
+      <table class="min-w-full text-sm">
+        <thead class="bg-slate-50 text-slate-600">
+          <tr>
+            <th class="text-left px-4 py-2">Time</th>
+            <th class="text-left px-4 py-2">Temp (°C)</th>
+            <th class="text-left px-4 py-2">TDS (ppm)</th>
+            <th class="text-left px-4 py-2">Status</th>
+          </tr>
+        </thead>
+        <tbody id="recentRows" class="divide-y divide-slate-100"></tbody>
+      </table>
+    </div>
   </div>
 </div>
 
-  </div>
 
   <!-- Actuator Controls -->
   <div class="rounded-3xl bg-white/75 backdrop-blur border border-white shadow-soft p-6">
@@ -135,6 +195,24 @@
   const btnStopBuzz = document.getElementById("btnStopBuzz");
   const cmdStatus = document.getElementById("cmdStatus");
 
+  // NEW UI bits
+  const scoreVal = document.getElementById("scoreVal");
+  const scoreHint = document.getElementById("scoreHint");
+  const trendVal = document.getElementById("trendVal");
+  const trendHint = document.getElementById("trendHint");
+  const recVal = document.getElementById("recVal");
+  const recHint = document.getElementById("recHint");
+
+  const tempAvg = document.getElementById("tempAvg");
+  const tdsAvg = document.getElementById("tdsAvg");
+  const tempSummary = document.getElementById("tempSummary");
+  const tdsSummary = document.getElementById("tdsSummary");
+
+  const sparkTempPath = document.getElementById("sparkTempPath");
+  const sparkTdsPath = document.getElementById("sparkTdsPath");
+
+  const recentRows = document.getElementById("recentRows");
+
   function statusFrom(tempC, tdsPpm) {
     let level = "safe";
     if (tempC >= 42 || tdsPpm >= 450) level = "danger";
@@ -148,67 +226,103 @@
     const dotClass = "h-2.5 w-2.5 rounded-full";
 
     if (level === "danger") {
-      statusBadge.classList.add("bg-red-100", "text-red-700", "border", "border-red-200");
+      statusBadge.classList.add("bg-red-100","text-red-700","border","border-red-200");
       statusBadge.innerHTML = `<span class="${dotClass} bg-red-500"></span> Danger`;
     } else if (level === "warn") {
-      statusBadge.classList.add("bg-amber-100", "text-amber-800", "border", "border-amber-200");
+      statusBadge.classList.add("bg-amber-100","text-amber-800","border","border-amber-200");
       statusBadge.innerHTML = `<span class="${dotClass} bg-amber-500"></span> Warning`;
     } else {
-      statusBadge.classList.add("bg-mint-100", "text-mint-700", "border", "border-mint-200");
+      statusBadge.classList.add("bg-mint-100","text-mint-700","border","border-mint-200");
       statusBadge.innerHTML = `<span class="${dotClass} bg-mint-500"></span> Safe`;
     }
   }
 
-  // =========================
-  // ✅ BAR + BAR CHARTS SETUP
-  // (Requires: chart.js + luxon + chartjs-adapter-luxon scripts in <head>)
-  // and canvas IDs: tempChart + tdsChart
-  // =========================
-  const tempCtx = document.getElementById("tempChart").getContext("2d");
-  const tdsCtx = document.getElementById("tdsChart").getContext("2d");
+  function formatTs(ts) {
+    try { return new Date(ts).toLocaleString(); } catch { return ts; }
+  }
 
-  const timeScale = {
-    type: "time",
-    time: {
-      tooltipFormat: "HH:mm:ss",
-      displayFormats: { second: "HH:mm:ss", minute: "HH:mm" }
-    },
-    ticks: { maxRotation: 0, autoSkip: true, maxTicksLimit: 8 }
-  };
-
-  const baseBarOptions = {
-    responsive: true,
-    parsing: false, // using {x, y}
-    plugins: {
-      legend: { display: false },
-      tooltip: { mode: "index", intersect: false }
-    },
-    scales: { x: timeScale }
-  };
-
-  const tempChart = new Chart(tempCtx, {
-    type: "bar",
-    data: { datasets: [{ label: "Temp (°C)", data: [] }] },
-    options: {
-      ...baseBarOptions,
-      scales: {
-        ...baseBarOptions.scales,
-        y: { title: { display: true, text: "°C" }, suggestedMin: 20, suggestedMax: 50 }
-      }
+  function minutesAgo(ts) {
+    try {
+      const d = new Date(ts);
+      const diffMs = Date.now() - d.getTime();
+      return Math.max(0, Math.round(diffMs / 60000));
+    } catch {
+      return null;
     }
-  });
+  }
 
-  const tdsChart = new Chart(tdsCtx, {
-    type: "bar",
-    data: { datasets: [{ label: "TDS (ppm)", data: [] }] },
-    options: {
-      ...baseBarOptions,
-      scales: {
-        ...baseBarOptions.scales,
-        y: { title: { display: true, text: "ppm" }, suggestedMin: 0, suggestedMax: 600 }
-      }
+  // ✅ Simple scoring: starts at 100 and subtracts penalties
+  function computeScore(latest, history) {
+    if (!latest) return { score: null, hint: "No data yet" };
+
+    const temp = Number(latest.temp_c);
+    const tds = Number(latest.tds_ppm);
+
+    let score = 100;
+
+    // temp penalty
+    if (temp >= 42) score -= 35;
+    else if (temp >= 40) score -= 20;
+    else if (temp >= 38) score -= 8;
+
+    // tds penalty (example thresholds)
+    if (tds >= 450) score -= 35;
+    else if (tds >= 300) score -= 18;
+    else if (tds >= 200) score -= 8;
+
+    // stability penalty (if bouncing a lot)
+    if (history && history.length >= 6) {
+      const temps = history.slice(-6).map(p => Number(p.temp_c));
+      const maxT = Math.max(...temps);
+      const minT = Math.min(...temps);
+      const swing = maxT - minT;
+      if (swing >= 3) score -= 8;
+      else if (swing >= 2) score -= 4;
     }
-  });
+
+    score = Math.max(0, Math.min(100, Math.round(score)));
+
+    let hint = "Good conditions.";
+    if (score < 40) hint = "High risk readings detected.";
+    else if (score < 70) hint = "Some readings are outside the ideal range.";
+
+    return { score, hint };
+  }
+
+  function trendArrow(values) {
+    if (!values || values.length < 6) return { label: "—", hint: "Not enough data" };
+    const recent = values.slice(-3).reduce((a,b)=>a+b,0) / 3;
+    const prev = values.slice(-6,-3).reduce((a,b)=>a+b,0) / 3;
+    const diff = recent - prev;
+
+    if (Math.abs(diff) < 0.2) return { label: "Stable", hint: "No meaningful change" };
+    if (diff > 0) return { label: "Rising ↑", hint: `Up by ~${diff.toFixed(1)}` };
+    return { label: "Falling ↓", hint: `Down by ~${Math.abs(diff).toFixed(1)}` };
+  }
+
+  // ✅ Sparkline drawing (SVG path)
+  function makeSparkPath(values, width=200, height=50, pad=4) {
+    if (!values || values.length < 2) return "";
+    const min = Math.min(...values);
+    const max = Math.max(...values);
+    const span = (max - min) || 1;
+
+    const n = values.length;
+    const xStep = (width - pad*2) / (n - 1);
+
+    const points = values.map((v, i) => {
+      const x = pad + i * xStep;
+      const yNorm = (v - min) / span;
+      const y = (height - pad) - yNorm * (height - pad*2);
+      return [x, y];
+    });
+
+    let d = `M ${points[0][0].toFixed(2)} ${points[0][1].toFixed(2)}`;
+    for (let i = 1; i < points.length; i++) {
+      d += ` L ${points[i][0].toFixed(2)} ${points[i][1].toFixed(2)}`;
+    }
+    return d;
+  }
 
   async function fetchLatest(deviceId) {
     const res = await fetch(`/api/telemetry/latest?device_id=${encodeURIComponent(deviceId)}`);
@@ -216,38 +330,88 @@
     return json.data;
   }
 
-  async function fetchHistory(deviceId, limit = 50) {
-    const res = await fetch(
-      `/api/telemetry/history?device_id=${encodeURIComponent(deviceId)}&limit=${limit}`
-    );
+  async function fetchHistory(deviceId, limit=60) {
+    const res = await fetch(`/api/telemetry/history?device_id=${encodeURIComponent(deviceId)}&limit=${limit}`);
     const json = await res.json();
     return json.data || [];
   }
 
-  function formatTs(ts) {
-    try {
-      return new Date(ts).toLocaleString();
-    } catch {
-      return ts;
+  function renderRecentTable(rows) {
+    const top = rows.slice(-10).reverse(); // newest first
+    recentRows.innerHTML = top.map(r => {
+      const lvl = statusFrom(Number(r.temp_c), Number(r.tds_ppm));
+      const pill =
+        lvl === "danger"
+          ? `<span class="px-2 py-1 rounded-full text-xs font-semibold bg-red-100 text-red-700 border border-red-200">Danger</span>`
+          : lvl === "warn"
+          ? `<span class="px-2 py-1 rounded-full text-xs font-semibold bg-amber-100 text-amber-800 border border-amber-200">Warning</span>`
+          : `<span class="px-2 py-1 rounded-full text-xs font-semibold bg-mint-100 text-mint-700 border border-mint-200">Safe</span>`;
+
+      return `
+        <tr class="text-slate-700">
+          <td class="px-4 py-2 whitespace-nowrap">${formatTs(r.ts)}</td>
+          <td class="px-4 py-2">${Number(r.temp_c).toFixed(1)}</td>
+          <td class="px-4 py-2">${Number(r.tds_ppm)}</td>
+          <td class="px-4 py-2">${pill}</td>
+        </tr>
+      `;
+    }).join("");
+
+    if (top.length === 0) {
+      recentRows.innerHTML = `
+        <tr><td colspan="4" class="px-4 py-6 text-center text-slate-500">No data yet.</td></tr>
+      `;
     }
+  }
+
+  function buildRecommendation(latest, history) {
+    if (!latest) return { title: "No data yet", hint: "Start publishing telemetry." };
+
+    const temp = Number(latest.temp_c);
+    const tds = Number(latest.tds_ppm);
+
+    const hotCount = history.slice(-10).filter(p => Number(p.temp_c) >= 40).length;
+    const highTdsCount = history.slice(-10).filter(p => Number(p.tds_ppm) >= 300).length;
+
+    if (temp >= 42 || tds >= 450) {
+      return { title: "Avoid using this water right now", hint: "Readings indicate a danger threshold." };
+    }
+    if (temp >= 40) {
+      return { title: "Lower temperature", hint: `${hotCount}/10 recent readings were ≥ 40°C.` };
+    }
+    if (tds >= 300) {
+      return { title: "Consider filtration", hint: `${highTdsCount}/10 recent readings were ≥ 300ppm.` };
+    }
+    return { title: "Looks good", hint: "No issues detected in recent readings." };
   }
 
   async function refreshAll() {
     const deviceId = deviceSelect.value;
 
     const latest = await fetchLatest(deviceId);
+    const history = await fetchHistory(deviceId, 60);
+
+    // --- top stats (already in your UI) ---
     if (latest) {
       tempVal.textContent = Number(latest.temp_c).toFixed(1);
-      tdsVal.textContent = latest.tds_ppm;
+      tdsVal.textContent = Number(latest.tds_ppm);
       lastUpdate.textContent = formatTs(latest.ts);
 
       const lvl = statusFrom(Number(latest.temp_c), Number(latest.tds_ppm));
       setBadge(lvl);
 
-      tempHint.textContent =
-        Number(latest.temp_c) >= 40 ? "High temperature — consider lowering" : "Temperature normal";
-      tdsHint.textContent =
-        Number(latest.tds_ppm) >= 300 ? "Higher mineral content detected" : "TDS normal";
+      const mins = minutesAgo(latest.ts);
+      tempHint.textContent = (Number(latest.temp_c) >= 40)
+        ? "High temperature — consider lowering"
+        : "Temperature normal";
+      tdsHint.textContent = (Number(latest.tds_ppm) >= 300)
+        ? "Higher mineral content detected"
+        : "TDS normal";
+
+      if (mins !== null) {
+        // small improvement: show time freshness
+        // (optional) keep your existing lastUpdate text too
+      }
     } else {
       tempVal.textContent = "—";
       tdsVal.textContent = "—";
@@ -257,24 +421,57 @@
       tdsHint.textContent = "Publish telemetry to see data";
     }
 
-    // ✅ use fewer points for readable bars
-    const history = await fetchHistory(deviceId, 50);
+    // --- NEW: Score + trend + recommendation ---
+    const { score, hint } = computeScore(latest, history);
+    scoreVal.textContent = (score === null) ? "—" : String(score);
+    scoreHint.textContent = hint;
 
-    const tempPoints = history.map(p => ({ x: new Date(p.ts), y: Number(p.temp_c) }));
-    const tdsPoints = history.map(p => ({ x: new Date(p.ts), y: Number(p.tds_ppm) }));
+    if (history.length) {
+      const tempValues = history.map(p => Number(p.temp_c));
+      const tdsValues = history.map(p => Number(p.tds_ppm));
 
-    tempChart.data.datasets[0].data = tempPoints;
-    tdsChart.data.datasets[0].data = tdsPoints;
+      const tTrend = trendArrow(tempValues);
+      trendVal.textContent = `Temp: ${tTrend.label}`;
+      trendHint.textContent = tTrend.hint;
 
-    tempChart.update();
-    tdsChart.update();
+      const avgTemp = tempValues.reduce((a,b)=>a+b,0) / tempValues.length;
+      const avgTds = tdsValues.reduce((a,b)=>a+b,0) / tdsValues.length;
+
+      tempAvg.textContent = `Avg: ${avgTemp.toFixed(1)}°C`;
+      tdsAvg.textContent = `Avg: ${Math.round(avgTds)}ppm`;
+
+      sparkTempPath.setAttribute("d", makeSparkPath(tempValues.slice(-40)));
+      sparkTdsPath.setAttribute("d", makeSparkPath(tdsValues.slice(-40)));
+
+      const hotCount = history.slice(-10).filter(p => Number(p.temp_c) >= 40).length;
+      const highTdsCount = history.slice(-10).filter(p => Number(p.tds_ppm) >= 300).length;
+
+      tempSummary.textContent = `${hotCount}/10 recent readings were ≥ 40°C`;
+      tdsSummary.textContent = `${highTdsCount}/10 recent readings were ≥ 300ppm`;
+    } else {
+      trendVal.textContent = "—";
+      trendHint.textContent = "Not enough data";
+      tempAvg.textContent = "Avg: —";
+      tdsAvg.textContent = "Avg: —";
+      sparkTempPath.setAttribute("d", "");
+      sparkTdsPath.setAttribute("d", "");
+      tempSummary.textContent = "—";
+      tdsSummary.textContent = "—";
+    }
+
+    const rec = buildRecommendation(latest, history);
+    recVal.textContent = rec.title;
+    recHint.textContent = rec.hint;
+
+    // --- NEW: Recent table ---
+    renderRecentTable(history);
   }
 
   async function sendCmd(deviceId, body) {
     cmdStatus.textContent = "Sending…";
     const res = await fetch(`/api/device/${encodeURIComponent(deviceId)}/command`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: {"Content-Type": "application/json"},
       body: JSON.stringify(body)
     });
 
@@ -310,5 +507,6 @@
   refreshAll();
   setInterval(refreshAll, 5000);
 </script>
+
 
 {% endblock %}
