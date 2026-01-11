@@ -3,6 +3,10 @@
 
 {% block content %}
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/luxon@3"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-luxon@1"></script>
+
+
 
 <div class="flex flex-col gap-6">
   <!-- Header Card -->
@@ -77,9 +81,18 @@
       </button>
     </div>
 
-    <div class="mt-4 rounded-2xl bg-white p-3 border border-slate-100">
-      <canvas id="telemetryChart" height="110"></canvas>
-    </div>
+   <div class="mt-4 grid grid-cols-1 lg:grid-cols-2 gap-4">
+  <div class="rounded-2xl bg-white p-3 border border-slate-100">
+    <div class="text-sm font-semibold text-slate-700 mb-2">Temperature (°C) — last 50</div>
+    <canvas id="tempChart" height="140"></canvas>
+  </div>
+
+  <div class="rounded-2xl bg-white p-3 border border-slate-100">
+    <div class="text-sm font-semibold text-slate-700 mb-2">TDS (ppm) — last 50</div>
+    <canvas id="tdsChart" height="140"></canvas>
+  </div>
+</div>
+
   </div>
 
   <!-- Actuator Controls -->
@@ -130,35 +143,69 @@
   }
 
   function setBadge(level) {
-    // reset
-    statusBadge.className = "mt-3 inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-sm font-semibold";
-    let dotClass = "h-2.5 w-2.5 rounded-full";
+    statusBadge.className =
+      "mt-3 inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-sm font-semibold";
+    const dotClass = "h-2.5 w-2.5 rounded-full";
 
     if (level === "danger") {
-      statusBadge.classList.add("bg-red-100","text-red-700","border","border-red-200");
+      statusBadge.classList.add("bg-red-100", "text-red-700", "border", "border-red-200");
       statusBadge.innerHTML = `<span class="${dotClass} bg-red-500"></span> Danger`;
     } else if (level === "warn") {
-      statusBadge.classList.add("bg-amber-100","text-amber-800","border","border-amber-200");
+      statusBadge.classList.add("bg-amber-100", "text-amber-800", "border", "border-amber-200");
       statusBadge.innerHTML = `<span class="${dotClass} bg-amber-500"></span> Warning`;
     } else {
-      statusBadge.classList.add("bg-mint-100","text-mint-700","border","border-mint-200");
+      statusBadge.classList.add("bg-mint-100", "text-mint-700", "border", "border-mint-200");
       statusBadge.innerHTML = `<span class="${dotClass} bg-mint-500"></span> Safe`;
     }
   }
 
-  const ctx = document.getElementById("telemetryChart").getContext("2d");
-  const chart = new Chart(ctx, {
-    type: "line",
-    data: { labels: [], datasets: [
-      { label: "Temp (°C)", data: [], yAxisID: "yTemp", tension: 0.25 },
-      { label: "TDS (ppm)", data: [], yAxisID: "yTds", tension: 0.25 }
-    ]},
+  // =========================
+  // ✅ BAR + BAR CHARTS SETUP
+  // (Requires: chart.js + luxon + chartjs-adapter-luxon scripts in <head>)
+  // and canvas IDs: tempChart + tdsChart
+  // =========================
+  const tempCtx = document.getElementById("tempChart").getContext("2d");
+  const tdsCtx = document.getElementById("tdsChart").getContext("2d");
+
+  const timeScale = {
+    type: "time",
+    time: {
+      tooltipFormat: "HH:mm:ss",
+      displayFormats: { second: "HH:mm:ss", minute: "HH:mm" }
+    },
+    ticks: { maxRotation: 0, autoSkip: true, maxTicksLimit: 8 }
+  };
+
+  const baseBarOptions = {
+    responsive: true,
+    parsing: false, // using {x, y}
+    plugins: {
+      legend: { display: false },
+      tooltip: { mode: "index", intersect: false }
+    },
+    scales: { x: timeScale }
+  };
+
+  const tempChart = new Chart(tempCtx, {
+    type: "bar",
+    data: { datasets: [{ label: "Temp (°C)", data: [] }] },
     options: {
-      responsive: true,
-      interaction: { mode: "index", intersect: false },
+      ...baseBarOptions,
       scales: {
-        yTemp: { type: "linear", position: "left", title: { display: true, text: "°C" } },
-        yTds: { type: "linear", position: "right", title: { display: true, text: "ppm" }, grid: { drawOnChartArea: false } }
+        ...baseBarOptions.scales,
+        y: { title: { display: true, text: "°C" }, suggestedMin: 20, suggestedMax: 50 }
+      }
+    }
+  });
+
+  const tdsChart = new Chart(tdsCtx, {
+    type: "bar",
+    data: { datasets: [{ label: "TDS (ppm)", data: [] }] },
+    options: {
+      ...baseBarOptions,
+      scales: {
+        ...baseBarOptions.scales,
+        y: { title: { display: true, text: "ppm" }, suggestedMin: 0, suggestedMax: 600 }
       }
     }
   });
@@ -169,14 +216,20 @@
     return json.data;
   }
 
-  async function fetchHistory(deviceId, limit=200) {
-    const res = await fetch(`/api/telemetry/history?device_id=${encodeURIComponent(deviceId)}&limit=${limit}`);
+  async function fetchHistory(deviceId, limit = 50) {
+    const res = await fetch(
+      `/api/telemetry/history?device_id=${encodeURIComponent(deviceId)}&limit=${limit}`
+    );
     const json = await res.json();
     return json.data || [];
   }
 
   function formatTs(ts) {
-    try { return new Date(ts).toLocaleString(); } catch { return ts; }
+    try {
+      return new Date(ts).toLocaleString();
+    } catch {
+      return ts;
+    }
   }
 
   async function refreshAll() {
@@ -184,15 +237,17 @@
 
     const latest = await fetchLatest(deviceId);
     if (latest) {
-      tempVal.textContent = latest.temp_c.toFixed(1);
+      tempVal.textContent = Number(latest.temp_c).toFixed(1);
       tdsVal.textContent = latest.tds_ppm;
       lastUpdate.textContent = formatTs(latest.ts);
 
-      const lvl = statusFrom(latest.temp_c, latest.tds_ppm);
+      const lvl = statusFrom(Number(latest.temp_c), Number(latest.tds_ppm));
       setBadge(lvl);
 
-      tempHint.textContent = (latest.temp_c >= 40) ? "High temperature — consider lowering" : "Temperature normal";
-      tdsHint.textContent = (latest.tds_ppm >= 300) ? "Higher mineral content detected" : "TDS normal";
+      tempHint.textContent =
+        Number(latest.temp_c) >= 40 ? "High temperature — consider lowering" : "Temperature normal";
+      tdsHint.textContent =
+        Number(latest.tds_ppm) >= 300 ? "Higher mineral content detected" : "TDS normal";
     } else {
       tempVal.textContent = "—";
       tdsVal.textContent = "—";
@@ -202,18 +257,24 @@
       tdsHint.textContent = "Publish telemetry to see data";
     }
 
-    const history = await fetchHistory(deviceId, 200);
-    chart.data.labels = history.map(p => new Date(p.ts).toLocaleTimeString());
-    chart.data.datasets[0].data = history.map(p => p.temp_c);
-    chart.data.datasets[1].data = history.map(p => p.tds_ppm);
-    chart.update();
+    // ✅ use fewer points for readable bars
+    const history = await fetchHistory(deviceId, 50);
+
+    const tempPoints = history.map(p => ({ x: new Date(p.ts), y: Number(p.temp_c) }));
+    const tdsPoints = history.map(p => ({ x: new Date(p.ts), y: Number(p.tds_ppm) }));
+
+    tempChart.data.datasets[0].data = tempPoints;
+    tdsChart.data.datasets[0].data = tdsPoints;
+
+    tempChart.update();
+    tdsChart.update();
   }
 
   async function sendCmd(deviceId, body) {
     cmdStatus.textContent = "Sending…";
     const res = await fetch(`/api/device/${encodeURIComponent(deviceId)}/command`, {
       method: "POST",
-      headers: {"Content-Type": "application/json"},
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify(body)
     });
 
@@ -249,4 +310,5 @@
   refreshAll();
   setInterval(refreshAll, 5000);
 </script>
+
 {% endblock %}
