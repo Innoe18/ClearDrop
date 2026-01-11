@@ -11,7 +11,7 @@ pnconfig.publish_key = os.getenv("PUBNUB_PUBLISH_KEY")
 pnconfig.subscribe_key = os.getenv("PUBNUB_SUBSCRIBE_KEY")
 pnconfig.user_id = f"cleardrop-sim-{DEVICE_ID}"
 
-# ✅ IMPORTANT: match the auth_key you granted for this device
+
 pnconfig.auth_key = DEVICE_ID
 
 pnconfig.ssl = True
