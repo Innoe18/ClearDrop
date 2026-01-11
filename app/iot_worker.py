@@ -14,7 +14,7 @@ def _parse_ts(ts: str | None) -> datetime | None:
     if not ts:
         return None
     try:
-        # Accept ISO string with Z
+        
         return datetime.fromisoformat(ts.replace("Z", "+00:00")).replace(tzinfo=None)
     except Exception:
         return None
@@ -27,7 +27,7 @@ class TelemetryListener(SubscribeCallback):
     def message(self, pubnub: PubNub, event):
         msg = event.message
 
-        # PubNub usually delivers dicts, but handle strings just in case
+      
         if not isinstance(msg, dict):
             return
 
@@ -57,7 +57,7 @@ def start_iot_worker(flask_app):
     pubnub.add_listener(TelemetryListener(flask_app))
     pubnub.subscribe().channels([channel]).execute()
 
-    # keep a daemon thread alive (pubnub uses background threads)
+    
     def _keep_alive():
         import time
         while True:

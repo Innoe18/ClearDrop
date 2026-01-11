@@ -28,7 +28,7 @@ class Device(db.Model):
     nickname = db.Column(db.String(64), default="My ClearDrop")
     owner_id = db.Column(db.Integer, db.ForeignKey("user.id"), nullable=False)
 
-    profile = db.Column(db.String(32), default="eczema")  # eczema/acne/sensitive
+    profile = db.Column(db.String(32), default="eczema")  
     temp_warn = db.Column(db.Float, default=38.0)
     temp_danger = db.Column(db.Float, default=40.0)
     tds_warn = db.Column(db.Integer, default=150)

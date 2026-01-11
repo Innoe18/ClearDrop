@@ -18,7 +18,7 @@ SECRET = must("PUBNUB_SECRET_KEY")
 DEVICE_ID = os.getenv("DEVICE_ID", "CD-001")
 TTL_MINUTES = int(os.getenv("TTL_MINUTES", "60"))
 
-# Channel names used in your project
+
 telemetry_ch = f"cleardrop.telemetry.{DEVICE_ID}"
 cmd_ch = f"cleardrop.cmd.{DEVICE_ID}"
 
@@ -31,9 +31,7 @@ pnconfig.ssl = True
 
 pubnub = PubNub(pnconfig)
 
-# Give the device:
-# - write to its telemetry channel
-# - read its command channel (so it can receive commands)
+
 spaces = [
     Space.id(telemetry_ch).write(),
     Space.id(cmd_ch).read()
@@ -43,9 +41,9 @@ envelope = (
     pubnub.grant_token()
     .spaces(spaces)
     .ttl(TTL_MINUTES)
-    .authorized_user(DEVICE_ID)   # token is for this device id
+    .authorized_user(DEVICE_ID)  
     .sync()
 )
 
-# Print token only (easy to copy/paste)
+
 print(envelope.result.token)
