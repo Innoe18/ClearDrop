@@ -11,13 +11,13 @@ pnconfig.publish_key = os.getenv("PUBNUB_PUBLISH_KEY")
 pnconfig.subscribe_key = os.getenv("PUBNUB_SUBSCRIBE_KEY")
 pnconfig.user_id = f"cleardrop-sim-{DEVICE_ID}"
 
-
-pnconfig.auth_key = os.getenv("PUBNUB_AUTH_KEY", DEVICE_ID)
+# ✅ IMPORTANT: match the auth_key you granted for this device
+pnconfig.auth_key = DEVICE_ID
 
 pnconfig.ssl = True
 pubnub = PubNub(pnconfig)
 
-print(f"Publishing as {DEVICE_ID} on {CHANNEL}")
+print(f"Publishing as {DEVICE_ID} on {CHANNEL} (auth_key={pnconfig.auth_key})")
 
 while True:
     msg = {
