@@ -70,6 +70,16 @@
 <div class="rounded-3xl bg-white/75 backdrop-blur border border-white shadow-soft p-6">
   <div class="flex items-center justify-between gap-4 flex-wrap">
     <div>
+      <button id="btnStartStream"
+  class="px-4 py-2 rounded-2xl text-sm font-semibold bg-mint-100 text-mint-700 border border-mint-200 hover:bg-mint-200 transition">
+  Start Telemetry
+</button>
+
+<button id="btnStopStream"
+  class="px-4 py-2 rounded-2xl text-sm font-semibold bg-red-100 text-red-700 border border-red-200 hover:bg-red-200 transition">
+  Stop Telemetry
+</button>
+
       <div class="text-lg font-bold">Insights</div>
       <div class="text-sm text-slate-500">Quick summary from your last readings</div>
     </div>
@@ -471,6 +481,20 @@
     if (!deviceId) return;
     sendCmd(deviceId, { cmd: "stop" });
   });
+const btnStartStream = document.getElementById("btnStartStream");
+const btnStopStream  = document.getElementById("btnStopStream");
+
+btnStartStream?.addEventListener("click", () => {
+  const deviceId = deviceSelect.value;
+  if (!deviceId) return;
+  sendCmd(deviceId, { cmd: "start_stream" });
+});
+
+btnStopStream?.addEventListener("click", () => {
+  const deviceId = deviceSelect.value;
+  if (!deviceId) return;
+  sendCmd(deviceId, { cmd: "stop_stream" });
+});
 
   deviceSelect.addEventListener("change", () => {
     const url = new URL(window.location.href);

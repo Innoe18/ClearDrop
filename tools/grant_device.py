@@ -26,7 +26,7 @@ pnconfig.ssl = True
 
 pubnub = PubNub(pnconfig)
 
-# Grant permissions to AUTH KEY == device_id
+
 envelope = pubnub.grant() \
     .channels([telemetry_chan, cmd_chan]) \
     .auth_keys([device_id]) \

@@ -9,5 +9,4 @@ ClearDrop is an IoT-based smart shower system designed to help users with sensit
 - PostgreSQL / SQLite
 - AWS (deployment)
 
-## Status
-Initial setup and web application development.
+
